@@ -1,0 +1,91 @@
+# Leadgen model: shop trong whitelist (WL) được mời -> có nộp hồ sơ vay TNEX trong tháng đó.
+# Đường dẫn tuyệt đối theo server hitech; sửa lại nếu chạy ở máy khác.
+
+run_name: leadgen
+
+label:
+  file: /home/hitech/repo-vtp/services/jupyter/notebooks/vtp_v2/src/notebooks/merged_customer_application_fpd.xlsx
+  sheet: Merged
+  key: cus_id
+  snapshot_col: date          # ngày snapshot WL (YYYY-MM-01)
+  positive_col: month         # có giá trị = shop đã nộp hồ sơ trong tháng snapshot
+  snapshots: [20260501, 20260601, 20260701, 20260801]
+
+split:                        # out-of-time
+  train: [20260501, 20260601]
+  test: [20260701, 20260801]
+
+minio:
+  connect_yaml: /home/hitech/repo-vtp/services/jupyter/notebooks/vtp_v2/src/config/connect.yaml
+  endpoint: 127.0.0.1:9990    # endpoint từ host; connect.yaml ghi hostname docker
+  bucket: null                # null = lấy từ connect_yaml
+
+# Mỗi thư mục trên S3 là một group feature.
+feature_sources:
+  - features/demographic/final
+  - features/demographic/l1m
+  - features/gmv/final
+  - features/location/l1m
+  - features/sales/l1m
+  - features/sales/l6m
+  - features/trend/final
+  - features/vct/l1m
+  - features/vct/l3m
+  - features/cus_base/l1m
+  - features/cus_base/l6m
+  - features/cuoc_trongluong/l1m
+  - features/cuoc_trongluong/l6m
+
+exclude_columns:              # metadata, ngày thô, hằng số theo tháng
+  - quarter
+  - duration_group
+  - dob
+  - ngay_hoptac
+  - population_cod_ship_rev_gmv_ratio_x
+  - population_cod_ship_rev_gmv_ratio_y
+  # Điều kiện vào WL: gần như luôn = 1 trong WL; riêng snapshot 20260601 trống 100%
+  # (trend/final tháng đó không có cột) -> model học ra tháng thay vì hành vi shop.
+  - delivered_orders_every_month_4m
+  - delivered_orders_every_month_3m
+  - delivered_orders_every_month_2m
+
+categorical_columns:
+  - top1_location_l1m
+
+stat_filter:
+  max_missing: 0.95           # bỏ nếu thiếu > 95%
+  max_dominant: 0.995         # bỏ nếu một giá trị chiếm > 99,5%
+  max_spearman: 0.95          # cặp |Spearman| > 0,95: giữ biến có AUC đơn biến cao hơn
+  corr_sample: 50000
+
+selection:
+  cum_importance: 0.90        # giữ feature tới khi cộng dồn importance >= 90%
+  min_features_group: 1
+  min_features_final: 5
+  cv_folds: 3
+  catboost:                   # tham số nhanh dùng cho bước chọn biến
+    iterations: 600
+    learning_rate: 0.05
+    depth: 6
+    early_stopping_rounds: 50
+
+optuna:
+  n_trials: 40
+  cv_folds: 3
+  timeout_sec: 3600
+  max_iterations: 2000
+  early_stopping_rounds: 100
+
+seed: 42
+thread_count: 14
+
+eval:
+  n_bins: 10                  # precision table theo decile
+  shap_top: 10
+  shap_sample: 5000
+  psi_bins: 10
+
+paths:
+  cache_dir: data             # cache dữ liệu đã merge (không commit)
+  output_dir: outputs/leadgen
+  model_dir: models/leadgen
