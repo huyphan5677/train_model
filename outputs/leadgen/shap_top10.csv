@@ -1,0 +1,11 @@
+feature,mean_abs_shap
+solan_rut_cod_sum_l3m,0.5902685481191382
+solan_rut_cod_l1m,0.13182939103730792
+trongluong_max_min_ratio_min_l6m,0.11271973870379677
+avg_tiencod_per_don_mean_l3m,0.044656528610821734
+thu_ho_sum_l3m,0.06550460092976135
+ty_le_cuoc_tren_thuho_mean_l3m,0.07632500520768531
+is_cod_x,0.05455180101389375
+duration,0.03996079866639022
+trongluong_max_min_ratio_l1m,0.05155120434167022
+ty_le_don_co_cod_l1m,0.1558707453154217

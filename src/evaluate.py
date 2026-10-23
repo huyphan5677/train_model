@@ -136,23 +136,29 @@ def precision_tables(df_test: pd.DataFrame, n_bins: int, out: Path) -> pd.DataFr
     t = t[["date"] + [c for c in t.columns if c != "date"]]
     t.to_csv(out / "precision_by_decile_test.csv", index=False)
 
-    a = t[t["date"] == "all_test"]
-    base = df_test["label"].mean()
+    plot_precision(t, out)
+    return t
+
+
+def plot_precision(t: pd.DataFrame, out: Path):
+    """Vẽ từ bảng precision (vẽ lại được từ precision_by_decile_test.csv)."""
+    a = t[t["date"].astype(str) == "all_test"]
+    base = a["n_pos"].sum() / a["n"].sum()
+    n_bins = len(a)
     fig, ax = plt.subplots(figsize=(7.5, 4))
     ax.bar(a["bin"], a["precision"] * 100, color=C_TEST, width=0.6, label="Precision trong bin")
     ax.plot(a["bin"], a["cum_precision"] * 100, color=INK, lw=2, marker="o", ms=5, label="Precision cộng dồn từ bin 1")
-    ax.axhline(base * 100, color=INK2, ls="--", lw=1)
-    ax.text(0.55, base * 100, f"tỷ lệ chung {base:.2%}", va="bottom", ha="left", color=INK2, fontsize=9)
+    ax.axhline(base * 100, color=INK2, ls="--", lw=1, label=f"Tỷ lệ chung {base:.2%}")
     for r in a.itertuples():
         ax.text(r.bin, r.precision * 100, f"{r.precision:.2%}\n×{r.lift:.1f}", ha="center", va="bottom", color=INK, fontsize=8)
     ax.set_ylim(0, a["precision"].max() * 100 * 1.18)
     ax.set_xticks(a["bin"], [f"{b}" for b in a["bin"]])
+    ax.set_xlim(0.4, n_bins + 0.6)
     ax.set_xlabel("Bin điểm (1 = 10% điểm cao nhất)")
     ax.set_ylabel("Precision (%)")
     ax.set_title("Precision theo decile điểm — tập test")
     ax.legend(frameon=False, loc="upper right")
     _save(fig, out / "precision_by_decile_test.png")
-    return t
 
 
 # ---------------------------------------------------------------- PSI

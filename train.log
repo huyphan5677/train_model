@@ -1,0 +1,86 @@
+[data] demographic/final        cols=  2 matched=207,072
+[data] demographic/l1m          cols=  0 matched=198,544
+[data] gmv/final                cols=  4 matched=207,072
+[data] location/l1m             cols=  2 matched=196,822
+[data] sales/l1m                cols=  9 matched=198,544
+[data] sales/l6m                cols= 46 matched=207,059
+[data] trend/final              cols=  2 matched=205,790
+[data] vct/l1m                  cols= 23 matched=198,544
+[data] vct/l3m                  cols= 46 matched=206,763
+[data] cus_base/l1m             cols=  8 matched=198,544
+[data] cus_base/l6m             cols= 25 matched=207,059
+[data] cuoc_trongluong/l1m      cols= 16 matched=198,544
+[data] cuoc_trongluong/l6m      cols= 27 matched=207,059
+[train] rows train=106,077 test=101,049 features=210
+[select] stat filter: 210 -> 95
+[select] group cuoc_trongluong/l1m       13 ->  12 (cv auc 0.664)
+[select] group cuoc_trongluong/l6m       18 ->  15 (cv auc 0.655)
+[select] group cus_base/l1m               3 ->   2 (cv auc 0.628)
+[select] group cus_base/l6m              10 ->   9 (cv auc 0.671)
+[select] group demographic/final          2 ->   2 (cv auc 0.598)
+[select] group gmv/final                  4 ->   3 (cv auc 0.645)
+[select] group location/l1m               2 ->   2 (cv auc 0.569)
+[select] group sales/l1m                  4 ->   4 (cv auc 0.710)
+[select] group sales/l6m                  9 ->   7 (cv auc 0.711)
+[select] group trend/final                2 ->   2 (cv auc 0.538)
+[select] group vct/l1m                   11 ->   9 (cv auc 0.852)
+[select] group vct/l3m                   17 ->  13 (cv auc 0.873)
+[select] combined: 80 -> 57 (cv auc 0.882)
+[optuna] trial   0 auc=0.8826 best=0.8826
+[optuna] trial   1 auc=0.8749 best=0.8826
+[optuna] trial   2 auc=0.8810 best=0.8826
+[optuna] trial   3 auc=0.8807 best=0.8826
+[optuna] trial   4 auc=0.8805 best=0.8826
+[optuna] trial   5 auc=0.8793 best=0.8826
+[optuna] trial   6 auc=0.8784 best=0.8826
+[optuna] trial   7 auc=0.8807 best=0.8826
+[optuna] trial   8 auc=0.8803 best=0.8826
+[optuna] trial   9 auc=0.8692 best=0.8826
+[optuna] trial  10 auc=0.8796 best=0.8826
+[optuna] trial  11 auc=0.8792 best=0.8826
+[optuna] trial  12 auc=0.8820 best=0.8826
+[optuna] trial  13 auc=0.8806 best=0.8826
+[optuna] trial  14 auc=0.8810 best=0.8826
+[optuna] trial  15 auc=0.8816 best=0.8826
+[optuna] trial  16 auc=0.8791 best=0.8826
+[optuna] trial  17 auc=0.8795 best=0.8826
+[optuna] trial  18 auc=0.8821 best=0.8826
+[optuna] trial  19 auc=0.8822 best=0.8826
+[optuna] trial  20 auc=0.8798 best=0.8826
+[optuna] trial  21 auc=0.8800 best=0.8826
+[optuna] trial  22 auc=0.8825 best=0.8826
+[optuna] trial  23 auc=0.8794 best=0.8826
+[optuna] trial  24 auc=0.8817 best=0.8826
+[optuna] trial  25 auc=0.8782 best=0.8826
+[optuna] trial  26 auc=0.8804 best=0.8826
+[optuna] trial  27 auc=0.8784 best=0.8826
+[optuna] trial  28 auc=0.8838 best=0.8838
+[optuna] trial  29 auc=0.8808 best=0.8838
+[optuna] trial  30 auc=0.8799 best=0.8838
+[optuna] trial  31 auc=0.8811 best=0.8838
+[optuna] trial  32 auc=0.8828 best=0.8838
+[optuna] trial  33 auc=0.8824 best=0.8838
+[optuna] trial  34 auc=0.8805 best=0.8838
+[optuna] trial  35 auc=0.8830 best=0.8838
+[optuna] trial  36 auc=0.8776 best=0.8838
+[optuna] trial  37 auc=0.8799 best=0.8838
+[optuna] trial  38 auc=0.8817 best=0.8838
+[optuna] trial  39 auc=0.8798 best=0.8838
+# Leadgen model — 2026-10-23 09:55
+
+- Nhãn: shop trong WL nộp hồ sơ trong tháng snapshot. Train [20260501, 20260601], test [20260701, 20260801] (out-of-time).
+- Chọn biến: 210 → lọc thống kê 95 → theo group 80 → gộp, cộng dồn 90% importance: **57 biến**.
+- Optuna 40 trial, AUC CV train tốt nhất 0.8838. Tham số: `{"learning_rate": 0.05436251374235174, "depth": 7, "l2_leaf_reg": 11.360666215395595, "random_strength": 0.8770160530216139, "bagging_temperature": 0.02023183370342043, "border_count": 254, "iterations": 276}`
+
+| Tháng | Tập | n | Nộp hồ sơ | AUC | Gini |
+|---|---|---|---|---|---|
+| 20260501 | train | 53,427 | 205 | 0.9144 | 0.8288 |
+| 20260601 | train | 52,650 | 467 | 0.8692 | 0.7384 |
+| 20260701 | test | 51,039 | 340 | 0.8886 | 0.7771 |
+| 20260801 | test | 50,010 | 243 | 0.8721 | 0.7443 |
+| all_test | test | 101,049 | 583 | 0.8818 | 0.7636 |
+| all_train | train | 106,077 | 672 | 0.8840 | 0.7680 |
+
+- Bin 1 (10% điểm cao nhất) trên test: precision 3.77%, lift ×6.54, bắt 65.4% số shop nộp hồ sơ.
+- PSI score: 20260701 0.0020, 20260801 0.0031, all_test 0.0022
+- Thời gian chạy: 38.5 phút.
