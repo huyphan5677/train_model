@@ -1,0 +1,107 @@
+[cohort] 20251201 n=234,029 label=full bad=10.368%
+[cohort] 20260101 n=241,324 label=full bad=10.607%
+[cohort] 20260201 n=242,707 label=full bad=11.631%
+[cohort] 20260301 n=220,164 label=full bad=11.476%
+[cohort] 20260401 n=216,078 label=full bad=12.678%
+[cohort] 20260501 n=204,431 label=full bad=12.420%
+[cohort] 20260601 n=221,786 label=partial_2m bad=13.050%
+[cohort] 20260701 n=217,602 label=partial_1m bad=13.604%
+[cohort] 20260801 n=215,209 label=none bad=nan%
+/home/hitech/repo-vtp/services/jupyter/notebooks/vtp_v2/src/notebooks/users/train_model/train_reliable.py:67: FutureWarning: The behavior of DataFrame concatenation with empty or all-NA entries is deprecated. In a future version, this will no longer exclude empty or all-NA columns when determining the result dtypes. To retain the old behavior, exclude the relevant entries before the concat operation.
+  cohorts = pd.concat(parts, ignore_index=True)
+[windows] 20251201-20260201 -> 20260301 (full); 20260101-20260301 -> 20260401 (full); 20260201-20260401 -> 20260501 (full); 20260301-20260501 -> 20260601 (partial_2m)
+[data] rows=1,580,519 features=202
+[select] stat filter: 202 -> 86
+[select] group cuoc_trongluong/l1m       12 ->  10 (cv auc 0.721)
+[select] group cuoc_trongluong/l6m       18 ->  14 (cv auc 0.707)
+[select] group cus_base/l1m               4 ->   3 (cv auc 0.743)
+[select] group cus_base/l6m               8 ->   7 (cv auc 0.670)
+[select] group demographic/final          2 ->   2 (cv auc 0.587)
+[select] group gmv/final                  2 ->   2 (cv auc 0.577)
+[select] group location/l1m               2 ->   2 (cv auc 0.534)
+[select] group sales/l1m                  3 ->   3 (cv auc 0.663)
+[select] group sales/l6m                 11 ->   8 (cv auc 0.753)
+[select] group trend/final                2 ->   2 (cv auc 0.576)
+[select] group vct/l1m                   10 ->   8 (cv auc 0.744)
+[select] group vct/l3m                   12 ->  10 (cv auc 0.691)
+[select] combined: 71 -> 46 (cv auc 0.815)
+[optuna] trial   0 auc=0.8175 best=0.8175
+[optuna] trial   1 auc=0.8156 best=0.8175
+[optuna] trial   2 auc=0.8169 best=0.8175
+[optuna] trial   3 auc=0.8166 best=0.8175
+[optuna] trial   4 auc=0.8139 best=0.8175
+[optuna] trial   5 auc=0.8120 best=0.8175
+[optuna] trial   6 auc=0.8166 best=0.8175
+[optuna] trial   7 auc=0.8100 best=0.8175
+[optuna] trial   8 auc=0.8163 best=0.8175
+[optuna] trial   9 auc=0.8116 best=0.8175
+[optuna] trial  10 auc=0.8164 best=0.8175
+[optuna] trial  11 auc=0.8176 best=0.8176
+[optuna] trial  12 auc=0.8175 best=0.8176
+[optuna] trial  13 auc=0.8153 best=0.8176
+[optuna] trial  14 auc=0.8154 best=0.8176
+[optuna] trial  15 auc=0.8167 best=0.8176
+[optuna] trial  16 auc=0.8178 best=0.8178
+[optuna] trial  17 auc=0.8169 best=0.8178
+[optuna] trial  18 auc=0.8166 best=0.8178
+[window 1] train 20251201-20260201 test 20260301 (full): AUC 0.7771 / S0 0.7941, 46 biến
+[select] stat filter: 202 -> 87
+[select] group cuoc_trongluong/l1m       13 ->  11 (cv auc 0.706)
+[select] group cuoc_trongluong/l6m       18 ->  14 (cv auc 0.710)
+[select] group cus_base/l1m               4 ->   3 (cv auc 0.718)
+[select] group cus_base/l6m               9 ->   7 (cv auc 0.678)
+[select] group demographic/final          2 ->   2 (cv auc 0.582)
+[select] group gmv/final                  2 ->   2 (cv auc 0.577)
+[select] group location/l1m               2 ->   2 (cv auc 0.540)
+[select] group sales/l1m                  1 ->   1 (cv auc 0.543)
+[select] group sales/l6m                 11 ->   7 (cv auc 0.752)
+[select] group trend/final                2 ->   2 (cv auc 0.602)
+[select] group vct/l1m                   11 ->   9 (cv auc 0.725)
+[select] group vct/l3m                   12 ->  10 (cv auc 0.690)
+[select] combined: 70 -> 50 (cv auc 0.789)
+[window 2] train 20260101-20260301 test 20260401 (full): AUC 0.8239 / S0 0.8397, 50 biến
+[select] stat filter: 202 -> 89
+[select] group cuoc_trongluong/l1m       13 ->  11 (cv auc 0.714)
+[select] group cuoc_trongluong/l6m       18 ->  14 (cv auc 0.722)
+[select] group cus_base/l1m               4 ->   4 (cv auc 0.718)
+[select] group cus_base/l6m               9 ->   7 (cv auc 0.688)
+[select] group demographic/final          2 ->   2 (cv auc 0.588)
+[select] group gmv/final                  2 ->   2 (cv auc 0.592)
+[select] group location/l1m               2 ->   2 (cv auc 0.553)
+[select] group sales/l1m                  2 ->   2 (cv auc 0.593)
+[select] group sales/l6m                 11 ->   8 (cv auc 0.756)
+[select] group trend/final                2 ->   2 (cv auc 0.601)
+[select] group vct/l1m                   10 ->   8 (cv auc 0.737)
+[select] group vct/l3m                   14 ->  11 (cv auc 0.725)
+[select] combined: 73 -> 50 (cv auc 0.799)
+[window 3] train 20260201-20260401 test 20260501 (full): AUC 0.8202 / S0 0.8363, 50 biến
+[select] stat filter: 202 -> 91
+[select] group cuoc_trongluong/l1m       12 ->  10 (cv auc 0.715)
+[select] group cuoc_trongluong/l6m       18 ->  14 (cv auc 0.723)
+[select] group cus_base/l1m               4 ->   3 (cv auc 0.719)
+[select] group cus_base/l6m               9 ->   7 (cv auc 0.689)
+[select] group demographic/final          2 ->   2 (cv auc 0.587)
+[select] group gmv/final                  2 ->   2 (cv auc 0.600)
+[select] group location/l1m               2 ->   2 (cv auc 0.555)
+[select] group sales/l1m                  2 ->   2 (cv auc 0.621)
+[select] group sales/l6m                 12 ->   8 (cv auc 0.757)
+[select] group trend/final                2 ->   2 (cv auc 0.594)
+[select] group vct/l1m                   11 ->   9 (cv auc 0.738)
+[select] group vct/l3m                   15 ->  12 (cv auc 0.723)
+[select] combined: 73 -> 50 (cv auc 0.803)
+[window 4] train 20260301-20260501 test 20260601 (partial_2m): AUC 0.8101 / S0 0.8297, 50 biến
+# Reliable score — 2026-10-23 14:38
+
+- Nhãn: bad = ngừng giao hoặc đơn 3 tháng tới < 0.3 × baseline (đã chia hệ số thị trường). Prediction set: đơn đủ 3 tháng, TB ≥ 5 đơn/tháng, thâm niên ≥ 3 tháng.
+- Cửa sổ trượt: train 3 cohort → test cohort kế tiếp; chọn biến lại trong mỗi cửa sổ; tham số Optuna tune một lần trên train cửa sổ đầu (0.8178 AUC CV).
+
+| Cửa sổ | Train | Test | Nhãn test | n test | Tỷ lệ bad | AUC | Gini | KS | AUC S0 | PSI score | Số biến |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | 20251201–20260201 | 20260301 | full | 220,164 | 11.48% | 0.7771 | 0.5543 | 0.4125 | 0.7941 | 1.1692 | 46 |
+| 2 | 20260101–20260301 | 20260401 | full | 216,078 | 12.68% | 0.8239 | 0.6478 | 0.4928 | 0.8397 | 0.0178 | 50 |
+| 3 | 20260201–20260401 | 20260501 | full | 204,431 | 12.42% | 0.8202 | 0.6405 | 0.4837 | 0.8363 | 0.0174 | 50 |
+| 4 | 20260301–20260501 | 20260601 | partial_2m | 221,786 | 13.05% | 0.8101 | 0.6203 | 0.4625 | 0.8297 | 0.0075 | 50 |
+
+- Độ ổn định (3 cửa sổ nhãn đủ): AUC 0.8071 ± 0.0212 (min 0.7771, max 0.8239); Gini 0.6142 ± 0.0425.
+- Model cuối train trên [20260301, 20260401, 20260501], 50 biến → `models/reliable/model.cbm`.
+- Thời gian chạy: 105.6 phút.

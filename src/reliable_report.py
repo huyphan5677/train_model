@@ -65,14 +65,16 @@ def window_metrics_chart(wm: pd.DataFrame, out: Path):
             for xi, v in zip(xs, vals):
                 ax.text(xi, v, f"{v:.3f}", ha="center", va="bottom", fontsize=7.5, color=INK)
         m = w.loc[full, col]
+        sub = ""
         if len(m):
             ax.axhline(m.mean(), color=INK2, ls="--", lw=1)
-            ax.text(len(w) - 0.5, m.mean(), f"TB {m.mean():.3f} ± {m.std(ddof=0):.3f}", ha="right", va="bottom", fontsize=8, color=INK2)
+            sub = f"\nTB nhãn đủ {m.mean():.3f} ± {m.std(ddof=0):.3f} (đường đứt)"
         ax.set_xticks(x, [month_label(d) + ("\n(nhãn tạm)" if not f else "") for d, f in zip(w["test"], full)])
-        ax.set_title(f"{name} tháng test theo cửa sổ")
+        ax.set_title(f"{name} tháng test theo cửa sổ{sub}")
         lo = 0.5 if col == "auc" else 0
         ax.set_ylim(lo, min(1, max(w[col].max(), w[col + "_s0"].max()) * 1.12))
-    axes[0].legend(frameon=False, loc="lower left")
+    h, l = axes[0].get_legend_handles_labels()
+    fig.legend(h, l, frameon=False, loc="lower center", ncols=2, bbox_to_anchor=(0.5, -0.14))
     _save(fig, out / "stability_auc_gini_ks.png")
 
 
