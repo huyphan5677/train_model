@@ -1,0 +1,102 @@
+# Reliable score (Credit score): rủi ro shop suy yếu kinh doanh trong H tháng tới.
+# Kiểm định cửa sổ trượt: train X cohort liên tiếp -> test cohort ngay sau; trượt 1 tháng mỗi lần.
+
+run_name: reliable
+
+reliable:
+  train_months: 3             # X: số cohort trong mỗi khung train (cố định)
+  horizon: 3                  # H: số tháng tương lai để đo nhãn
+  bad_threshold: 0.3          # (tương lai / baseline) / hệ số thị trường < 0,3 -> bad
+  min_orders: 5               # prediction set: TB >= 5 đơn/tháng trong 3 tháng gần nhất
+  min_tenure: 3               # prediction set: thâm niên >= 3 tháng
+  s0_min_orders: 10           # tập khó S0 (gần tập TNEX cho vay) + nơi tính hệ số thị trường
+  s0_min_tenure: 6
+  max_partial_test: 1         # chấp nhận 1 tháng test có nhãn tạm (chưa đủ H tháng) để xem trước
+  first_cohort: 20251201      # cohort sớm nhất: l6m đủ cửa sổ từ 20251201
+  orders_source: features/sales/l1m
+  orders_column: don_ptc_l1m
+
+minio:
+  connect_yaml: /home/hitech/repo-vtp/services/jupyter/notebooks/vtp_v2/src/config/connect.yaml
+  endpoint: 127.0.0.1:9990
+  bucket: null
+
+feature_sources:
+  - features/demographic/final
+  - features/gmv/final
+  - features/location/l1m
+  - features/sales/l1m
+  - features/sales/l6m
+  - features/trend/final
+  - features/vct/l1m
+  - features/vct/l3m
+  - features/cus_base/l1m
+  - features/cus_base/l6m
+  - features/cuoc_trongluong/l1m
+  - features/cuoc_trongluong/l6m
+
+exclude_columns:
+  - quarter
+  - duration_group
+  - dob
+  - ngay_hoptac
+  # Hằng số trong mỗi tháng -> model học ra tháng
+  - population_cod_ship_rev_gmv_ratio_x
+  - population_cod_ship_rev_gmv_ratio_y
+  # Cửa sổ 12 tháng chưa đủ lịch sử ở các cohort đầu
+  - gmv_12th
+  - is_cod_y
+  # "Vốn bị giữ": nghi lệch đơn vị (toàn trình tính bằng giờ)
+  - von_bi_giu_uoc_tinh_l1m
+  - ty_le_von_tren_thuho_l1m
+  - von_bi_giu_uoc_tinh_l3m
+  - ty_le_von_tren_thuho_l3m
+  - von_bi_giu_uoc_tinh_mean_l3m
+  - ty_le_von_tren_thuho_mean_l3m
+  # Điều kiện WL, trống 100% ở snapshot 20260601
+  - delivered_orders_every_month_4m
+  - delivered_orders_every_month_3m
+  - delivered_orders_every_month_2m
+
+categorical_columns:
+  - top1_location_l1m
+
+stat_filter:
+  max_missing: 0.95
+  max_dominant: 0.995
+  max_spearman: 0.95
+  corr_sample: 50000
+
+selection:                    # chạy lại trong từng cửa sổ, chỉ trên dữ liệu train của cửa sổ
+  cum_importance: 0.90
+  min_features_group: 1
+  min_features_final: 10
+  cv_folds: 3
+  sample_rows: 200000         # mẫu theo shop để chọn biến cho nhanh; model cửa sổ train trên toàn bộ
+  catboost:
+    iterations: 400
+    learning_rate: 0.08
+    depth: 6
+    early_stopping_rounds: 40
+
+optuna:                       # tune 1 lần trên train của cửa sổ đầu tiên, dùng lại cho mọi cửa sổ
+  n_trials: 25
+  cv_folds: 3
+  timeout_sec: 3600
+  max_iterations: 1500
+  early_stopping_rounds: 80
+  sample_rows: 200000
+
+seed: 42
+thread_count: 14
+
+eval:
+  n_bins: 10
+  shap_top: 10
+  shap_sample: 5000
+  psi_bins: 10
+
+paths:
+  cache_dir: data
+  output_dir: outputs/reliable
+  model_dir: models/reliable

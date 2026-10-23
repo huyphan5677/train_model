@@ -1,4 +1,8 @@
-# train_model — Leadgen model (VTP × TNEX)
+# train_model — VTP × TNEX
+
+Hai model: **Leadgen** (mục 1) và **Reliable score / Credit score** (mục 2).
+
+# 1. Leadgen model
 
 Train **một lần** model dự báo shop trong whitelist (WL) có **nộp hồ sơ vay TNEX** khi được mời, lưu model để dùng lại cho prediction, và xuất toàn bộ bảng/biểu đồ cho báo cáo.
 
@@ -52,3 +56,52 @@ python predict.py --date 20260801 --cus-file list.csv     # chấm danh sách cu
 ## Cấu hình
 
 `configs/leadgen.yaml`: đường dẫn file nhãn, danh sách nguồn S3, cột loại trừ, ngưỡng lọc, ngưỡng importance cộng dồn, số trial Optuna, tháng train/test. Credentials MinIO **không** nằm trong repo: đọc từ `connect.yaml` của repo vtp_v2 (đường dẫn trong config); endpoint từ host là `127.0.0.1:9990`.
+
+# 2. Reliable score (Credit score)
+
+Score rủi ro shop **suy yếu kinh doanh** trong H = 3 tháng tới, dùng làm cơ sở thẩm định gửi TNEX. Định nghĩa nhãn và prediction set giữ nguyên POC (`reliable_score_poc/README.md`).
+
+| | |
+|---|---|
+| Prediction set (cohort *t*) | Có đơn giao thành công ở cả 3 tháng gần nhất, TB ≥ 5 đơn/tháng, thâm niên ≥ 3 tháng |
+| Nhãn bad | Ngừng giao, hoặc (đơn H tháng tới / baseline 3 tháng) / hệ số thị trường < 0,3. Hệ số thị trường tính trên tập khó S0 (≥ 10 đơn/tháng, thâm niên ≥ 6) để khử Tết và biến động chung |
+| Nhãn tạm | Cohort chỉ mới có k < H tháng tương lai: tính trên k tháng (quy về trung bình tháng). Dùng cho **một** tháng test mới nhất để xem trước |
+| Score | 0–100, xếp hạng trong tháng (100 = ít rủi ro nhất), hạng A–E |
+
+## Kiểm định cửa sổ trượt (`train_reliable.py`)
+
+```
+cửa sổ 1: train [t1, t2, t3] -> test t4
+cửa sổ 2: train [t2, t3, t4] -> test t5
+...
+cửa sổ cuối: train [3 cohort nhãn đủ mới nhất] -> test cohort kế tiếp (nhãn tạm)
+```
+
+- Khung train cố định X tháng (`reliable.train_months`), trượt 1 tháng mỗi lần. Cửa sổ tự sinh theo dữ liệu có trên S3: khi feature store cập nhật tới tháng 10, chạy lại là có thêm cửa sổ.
+- Trong **mỗi** cửa sổ: chọn biến lại từ đầu trên train của cửa sổ đó (lọc thống kê → theo group → gộp, cộng dồn 90% importance; trên mẫu ~200 nghìn dòng lấy theo shop), rồi train CatBoost trên toàn bộ train.
+- Optuna tune **một lần** trên train của cửa sổ đầu tiên (đứng trước mọi tháng test nên không rò rỉ), tham số dùng lại cho mọi cửa sổ.
+- **Model cuối** = model của cửa sổ có khung train là X cohort nhãn đủ mới nhất, lưu ở `models/reliable/`.
+
+## Kết quả (`outputs/reliable/`)
+
+| File | Nội dung |
+|---|---|
+| `summary.md` | Bảng metric từng cửa sổ, độ ổn định (TB ± độ lệch chuẩn, min, max) |
+| `window_metrics.csv` | Mỗi cửa sổ: n, tỷ lệ bad, AUC, Gini, KS (prediction set và tập S0), PSI score train vs test, số biến |
+| `stability_summary.csv` | TB, độ lệch chuẩn, min, max của AUC/Gini/KS qua các cửa sổ nhãn đủ |
+| `stability_auc_gini_ks.png` | AUC/Gini/KS theo tháng test; cột gạch chéo = nhãn tạm |
+| `stability_decile_bad_rate.png/.csv` | Tỷ lệ bad theo decile rủi ro, mỗi đường một tháng test |
+| `stability_psi_score.png` | PSI score theo cửa sổ |
+| `stability_importance_by_group.png`, `importance_by_group_by_window.csv` | Tỷ trọng importance theo group qua các cửa sổ |
+| `selected_features_by_window.csv`, `feature_set_jaccard.csv` | Biến được chọn mỗi cửa sổ, độ trùng giữa hai cửa sổ liền nhau |
+| `label_rate_by_cohort.png/.csv` | Tỷ lệ bad, số shop, hệ số thị trường theo cohort |
+| `feature_importance*.csv/png`, `shap_top10.*` | Importance và SHAP của model cuối |
+| `report_tables.xlsx` | Gom mọi bảng |
+
+## Chạy
+
+```bash
+python train_reliable.py --config configs/reliable.yaml
+python predict_reliable.py                  # snapshot mới nhất đủ nguồn
+python predict_reliable.py --date 20260801
+```
