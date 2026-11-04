@@ -60,9 +60,8 @@ def main(cfg_path: str):
     sel = select_features(Xtr, ytr, gtr, features_all, feature_group, cfg)
     features = sel["final"]
     cats = [c for c in features if c in cats_all]
-    sel["stat_log"].to_csv(out / "selection_1_stat_filter.csv", index=False)
-    sel["group_log"].to_csv(out / "selection_2_by_group.csv", index=False)
-    sel["combined_log"].to_csv(out / "selection_3_combined.csv", index=False)
+    for name, log in sel["logs"]:
+        log.to_csv(out / f"selection_{name}.csv", index=False)
 
     # 3. Optuna
     tun = tune(Xtr, ytr, gtr, features, cfg)
@@ -105,6 +104,7 @@ def main(cfg_path: str):
         "train_snapshots": cfg["split"]["train"], "test_snapshots": cfg["split"]["test"],
         "params": params, "cv_auc": tun["cv_auc"],
         "test_auc": float(aucs.loc[aucs["date"] == "all_test", "auc"].iloc[0]),
+        "test_pr_auc": float(aucs.loc[aucs["date"] == "all_test", "pr_auc"].iloc[0]),
         "decile_cutpoints_test": cut,
     }
     (mdir / "model_meta.json").write_text(json.dumps(meta, ensure_ascii=False, indent=2))
@@ -119,23 +119,21 @@ def main(cfg_path: str):
         fi.to_excel(w, sheet_name="importance_feature", index=False)
         gi.to_excel(w, sheet_name="importance_group", index=False)
         shap_t.to_excel(w, sheet_name="shap_top10", index=False)
-        sel["stat_log"].to_excel(w, sheet_name="sel_1_stat", index=False)
-        sel["group_log"].to_excel(w, sheet_name="sel_2_group", index=False)
-        sel["combined_log"].to_excel(w, sheet_name="sel_3_combined", index=False)
+        for name, log in sel["logs"]:
+            log.to_excel(w, sheet_name=f"sel_{name}"[:31], index=False)
         tun["trials"].to_excel(w, sheet_name="optuna_trials", index=False)
 
-    n_stat = int((sel["stat_log"]["drop_reason"] == "").sum())
-    n_grp = int(sel["group_log"]["selected"].sum())
+    steps = " → ".join(f"{name.split('_', 1)[1]} {n}" for name, n in sel["counts"][1:])
     top_bin = prec[(prec["date"] == "all_test") & (prec["bin"] == 1)].iloc[0]
     lines = [
         f"# Leadgen model — {meta['trained_at']}", "",
         f"- Nhãn: shop trong WL nộp hồ sơ trong tháng snapshot. Train {cfg['split']['train']}, test {cfg['split']['test']} (out-of-time).",
-        f"- Chọn biến: {len(features_all)} → lọc thống kê {n_stat} → theo group {n_grp} → gộp, cộng dồn {cfg['selection']['cum_importance']:.0%} importance: **{len(features)} biến**.",
+        f"- Chọn biến: {len(features_all)} → {steps}: **{len(features)} biến**.",
         f"- Optuna {len(tun['trials'])} trial, AUC CV train tốt nhất {tun['cv_auc']:.4f}. Tham số: `{json.dumps(params)}`",
-        "", "| Tháng | Tập | n | Nộp hồ sơ | AUC | Gini |", "|---|---|---|---|---|---|",
+        "", "| Tháng | Tập | n | Nộp hồ sơ | AUC | Gini | PR-AUC | PR-AUC / tỷ lệ nhãn |", "|---|---|---|---|---|---|---|---|",
     ]
     for r in aucs.itertuples():
-        lines.append(f"| {r.date} | {r.split} | {r.n:,} | {r.n_pos:,} | {r.auc:.4f} | {r.gini:.4f} |")
+        lines.append(f"| {r.date} | {r.split} | {r.n:,} | {r.n_pos:,} | {r.auc:.4f} | {r.gini:.4f} | {r.pr_auc:.4f} | ×{r.pr_lift:.2f} |")
     lines += ["", f"- Bin 1 (10% điểm cao nhất) trên test: precision {top_bin.precision:.2%}, lift ×{top_bin.lift:.2f}, bắt {top_bin.cum_recall:.1%} số shop nộp hồ sơ.",
               f"- PSI score: " + ", ".join(f"{r.date} {r.psi_score:.4f}" for r in psi_s.itertuples()),
               f"- Thời gian chạy: {(time.time() - t0) / 60:.1f} phút."]

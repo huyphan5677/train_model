@@ -13,6 +13,8 @@ import pyarrow.fs as pafs
 import yaml
 
 KEYS = ["cus_id", "date"]
+MISSING = "nan"   # token thiếu của biến categorical; giữ "nan" để khớp model đã train
+NA_VALUES = {"", "None", "NULL", "null", "N/A", "#N/A"}   # null dạng chữ, khớp chính xác (NAN = Nghệ An)
 
 
 def load_config(path: str | Path) -> dict:
@@ -117,11 +119,13 @@ def load_features(cfg: dict, keys: pd.DataFrame, use_cache: bool = True
 
 
 def prepare_matrix(df: pd.DataFrame, features: list[str], cat_cols: list[str]) -> pd.DataFrame:
-    """Ma trận cho CatBoost: biến categorical thành chuỗi, số giữ NaN, inf -> NaN."""
+    """Ma trận cho CatBoost: biến categorical thành chuỗi dtype object (mọi kiểu thiếu -> MISSING),
+    số giữ NaN, inf -> NaN."""
     X = df[features].copy()
     for c in features:
-        if c in cat_cols or X[c].dtype == object:
-            X[c] = X[c].astype(str).fillna("NA")
+        if c in cat_cols or not pd.api.types.is_numeric_dtype(X[c]):
+            s = X[c].astype(object).where(X[c].notna(), MISSING).astype(str).str.strip()
+            X[c] = s.mask(s.isin(NA_VALUES), MISSING).astype(object)
         else:
             X[c] = pd.to_numeric(X[c], errors="coerce").replace([float("inf"), float("-inf")], float("nan"))
     return X

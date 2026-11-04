@@ -5,3 +5,4 @@ data/
 outputs/predictions/
 catboost_info/
 .ipynb_checkpoints/
+outputs/reliable_label_lab/

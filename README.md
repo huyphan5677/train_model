@@ -19,8 +19,8 @@ Train **một lần** model dự báo shop trong whitelist (WL) có **nộp hồ
 ## Pipeline (`train.py`)
 
 1. **Dữ liệu** — đọc nhãn từ Excel, đọc feature từ S3 (lọc theo `date`, `cus_id` ngay khi quét), cache ở `data/`.
-2. **Chọn biến** (chỉ dùng tập train, CV 3 fold theo nhóm `cus_id`):
-   1. Lọc thống kê: thiếu > 95%, gần hằng số (> 99,5% một giá trị), cặp |Spearman| > 0,95 (giữ biến AUC đơn biến cao hơn).
+2. **Chọn biến** (chỉ dùng tập train, CV 3 fold theo nhóm `cus_id`). Các bước khai báo ở `selection.steps` trong config, chọn được phương pháp và thứ tự (danh mục: comment trong `configs/leadgen.yaml`, code: `METHODS` trong `src/features.py`). Mặc định:
+   1. Lọc thống kê: thiếu > 95%, gần hằng số (> 99,5% một giá trị), phương sai thấp (cắt p1–p99, MinMaxScaler, < 0,001), hai cột giống nhau ≥ 99% số dòng, cặp |Spearman| > 0,95 (giữ biến AUC đơn biến cao hơn).
    2. Theo từng group: CatBoost trên biến của group, giữ biến tới khi cộng dồn importance ≥ 90%.
    3. Gộp các biến còn lại của mọi group, train lại, giữ top biến tới khi cộng dồn importance ≥ 90%.
 3. **Optuna** — tối ưu AUC trung bình CV trên train (depth, learning_rate, l2_leaf_reg, random_strength, bagging_temperature, border_count); số vòng lặp lấy từ early stopping.
@@ -31,14 +31,14 @@ Train **một lần** model dự báo shop trong whitelist (WL) có **nộp hồ
 
 | File | Nội dung |
 |---|---|
-| `summary.md` | Tóm tắt: số biến qua từng bước, tham số, AUC/Gini theo tháng, precision bin 1, PSI score |
+| `summary.md` | Tóm tắt: số biến qua từng bước, tham số, AUC/Gini/PR-AUC theo tháng, precision bin 1, PSI score |
 | `label_rate_by_month.png/.csv` | Tỷ lệ nhãn theo thời gian |
-| `auc_gini_by_month.png/.csv`, `roc_train_test.png` | AUC/Gini theo tháng (train OOF, test), ROC |
+| `auc_gini_by_month.png/.csv`, `roc_train_test.png`, `pr_train_test.png` | AUC/Gini/PR-AUC theo tháng (train OOF, test; kèm tỷ lệ nhãn và PR-AUC / tỷ lệ nhãn), ROC, đường Precision–Recall |
 | `shap_top10.png/.csv` | SHAP của 10 biến quan trọng nhất theo CatBoost |
 | `feature_importance_by_group.png/.csv`, `feature_importance.csv` | Importance theo group và theo biến |
 | `precision_by_decile_test.png/.csv` | Precision theo 10 bin điểm (bin 1 = 10% điểm cao nhất), lift, recall cộng dồn; cả test và từng tháng |
 | `psi_score_test.csv`, `psi_features_test.png/.csv` | PSI của score và của từng biến: train vs từng tháng test |
-| `selection_1_stat_filter.csv`, `selection_2_by_group.csv`, `selection_3_combined.csv` | Nhật ký chọn biến |
+| `selection_<i>_<method>.csv` | Nhật ký từng bước chọn biến (`score`, `selected`, cột riêng của phương pháp) |
 | `optuna_trials.csv`, `optuna_history.png`, `best_params.json` | Kết quả Optuna |
 | `report_tables.xlsx` | Gom mọi bảng trên vào một file Excel |
 

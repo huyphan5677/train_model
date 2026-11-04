@@ -1,0 +1,94 @@
+run_name: leadgen
+label:
+  file: /home/hitech/repo-vtp/services/jupyter/notebooks/vtp_v2/src/notebooks/merged_customer_application_fpd.xlsx
+  sheet: Merged
+  key: cus_id
+  snapshot_col: date
+  positive_col: month
+  snapshots:
+  - 20260501
+  - 20260601
+  - 20260701
+  - 20260801
+split:
+  train:
+  - 20260501
+  - 20260601
+  test:
+  - 20260701
+  - 20260801
+minio:
+  connect_yaml: /home/hitech/repo-vtp/services/jupyter/notebooks/vtp_v2/src/config/connect.yaml
+  endpoint: 127.0.0.1:9990
+  bucket: null
+feature_sources:
+- features/demographic/final
+- features/gmv/final
+- features/location/l1m
+- features/sales/l1m
+- features/sales/l6m
+- features/trend/final
+- features/vct/l1m
+- features/vct/l3m
+- features/cus_base/l1m
+- features/cus_base/l6m
+- features/cuoc_trongluong/l1m
+- features/cuoc_trongluong/l6m
+exclude_columns:
+- quarter
+- duration_group
+- dob
+- ngay_hoptac
+- population_cod_ship_rev_gmv_ratio_x
+- population_cod_ship_rev_gmv_ratio_y
+- delivered_orders_every_month_4m
+- delivered_orders_every_month_3m
+- delivered_orders_every_month_2m
+categorical_columns:
+- top1_location_l1m
+stat_filter:
+  max_missing: 0.95
+  max_dominant: 0.995
+  min_scaled_var: 0.001
+  max_equal_share: 0.99
+  max_spearman: 0.95
+  corr_sample: 50000
+selection:
+  cum_importance: 0.9
+  min_features_group: 1
+  min_features_final: 5
+  cv_folds: 3
+  catboost:
+    iterations: 600
+    learning_rate: 0.05
+    depth: 6
+    early_stopping_rounds: 50
+  steps:
+  - method: stat_filter
+  - method: vote
+    min_share: 0.67
+    methods:
+    - method: permutation
+      n_estimators: 300
+    - method: beat_random
+      n_estimators: 300
+    - method: mutual_info
+      sample_rows: 50000
+  - method: cum_importance
+optuna:
+  n_trials: 5
+  cv_folds: 3
+  timeout_sec: 3600
+  max_iterations: 2000
+  early_stopping_rounds: 100
+seed: 42
+thread_count: 14
+eval:
+  n_bins: 10
+  shap_top: 10
+  shap_sample: 5000
+  psi_bins: 10
+paths:
+  cache_dir: data
+  output_dir: outputs/leadgen_nb
+  model_dir: models/leadgen_nb

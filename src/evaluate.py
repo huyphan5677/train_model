@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 import shap
 from catboost import CatBoostClassifier, Pool
-from sklearn.metrics import roc_auc_score, roc_curve
+from sklearn.metrics import average_precision_score, precision_recall_curve, roc_auc_score, roc_curve
 
 # Bảng màu tham chiếu (dataviz skill): train = slot 1, test = slot 2; chữ và lưới trung tính
 C_TRAIN, C_TEST = "#2a78d6", "#eb6834"
@@ -66,30 +66,38 @@ def label_rate(df: pd.DataFrame, out: Path) -> pd.DataFrame:
     return t
 
 
-# ---------------------------------------------------------------- AUC / Gini
+# ---------------------------------------------------------------- AUC / Gini / PR-AUC
+def _metrics(d, s, g: pd.DataFrame) -> dict:
+    """PR-AUC = average precision; mốc ngẫu nhiên là tỷ lệ nhãn nên kèm label_rate và pr_lift = pr_auc / label_rate."""
+    two = g["label"].nunique() == 2
+    auc = roc_auc_score(g["label"], g["score"]) if two else np.nan
+    pr = average_precision_score(g["label"], g["score"]) if two else np.nan
+    rate = g["label"].mean()
+    return {"date": d, "split": s, "n": len(g), "n_pos": int(g["label"].sum()), "auc": auc, "gini": gini(auc),
+            "label_rate": rate, "pr_auc": pr, "pr_lift": pr / rate if rate > 0 else np.nan}
+
+
 def auc_by_month(df: pd.DataFrame, out: Path) -> pd.DataFrame:
     """df: date, split, label, score (train = OOF CV, test = model cuối)."""
-    rows = []
-    for (d, s), g in df.groupby(["date", "split"]):
-        auc = roc_auc_score(g["label"], g["score"]) if g["label"].nunique() == 2 else np.nan
-        rows.append({"date": d, "split": s, "n": len(g), "n_pos": int(g["label"].sum()), "auc": auc, "gini": gini(auc)})
-    for s, g in df.groupby("split"):
-        auc = roc_auc_score(g["label"], g["score"])
-        rows.append({"date": f"all_{s}", "split": s, "n": len(g), "n_pos": int(g["label"].sum()), "auc": auc, "gini": gini(auc)})
+    rows = [_metrics(d, s, g) for (d, s), g in df.groupby(["date", "split"])]
+    rows += [_metrics(f"all_{s}", s, g) for s, g in df.groupby("split")]
     t = pd.DataFrame(rows)
     t.to_csv(out / "auc_gini_by_month.csv", index=False)
 
     m = t[~t["date"].astype(str).str.startswith("all_")].sort_values("date")
     x = np.arange(len(m))
     colors = [C_TRAIN if s == "train" else C_TEST for s in m["split"]]
-    fig, axes = plt.subplots(1, 2, figsize=(10, 3.8))
-    for ax, col, name in [(axes[0], "auc", "AUC"), (axes[1], "gini", "Gini")]:
+    fig, axes = plt.subplots(1, 3, figsize=(15, 3.8))
+    for ax, col, name in [(axes[0], "auc", "AUC"), (axes[1], "gini", "Gini"), (axes[2], "pr_auc", "PR-AUC")]:
         ax.bar(x, m[col], color=colors, width=0.55)
         for i, v in enumerate(m[col]):
             ax.text(i, v, f"{v:.3f}", ha="center", va="bottom", color=INK, fontsize=9)
         ax.set_xticks(x, [month_label(d) for d in m["date"]])
         ax.set_title(f"{name} theo tháng (train = OOF CV, test = out-of-time)")
         ax.set_ylim(0.5 if col == "auc" else 0, 1 if col == "auc" else max(0.6, m[col].max() * 1.15))
+    axes[2].plot(x, m["label_rate"], color=INK, ls="none", marker="_", ms=24, mew=2)  # mốc ngẫu nhiên của PR-AUC
+    axes[2].set_ylim(0, max(0.1, m["pr_auc"].max() * 1.15))
+    axes[2].set_title("PR-AUC theo tháng (gạch đen = tỷ lệ nhãn)")
     axes[1].legend(handles=[plt.Rectangle((0, 0), 1, 1, color=C_TRAIN), plt.Rectangle((0, 0), 1, 1, color=C_TEST)],
                    labels=["train", "test"], frameon=False)
     _save(fig, out / "auc_gini_by_month.png")
@@ -106,6 +114,20 @@ def auc_by_month(df: pd.DataFrame, out: Path) -> pd.DataFrame:
     ax.set_title("ROC")
     ax.legend(frameon=False, loc="lower right")
     _save(fig, out / "roc_train_test.png")
+
+    fig, ax = plt.subplots(figsize=(4.8, 4.5))
+    for s, c in [("train", C_TRAIN), ("test", C_TEST)]:
+        g = df[df["split"] == s]
+        prec, rec, _ = precision_recall_curve(g["label"], g["score"])
+        rate = g["label"].mean()
+        ax.plot(rec, prec, color=c, lw=2, label=f"{s}: PR-AUC {average_precision_score(g['label'], g['score']):.3f} "
+                                                 f"(tỷ lệ nhãn {rate:.2%})")
+        ax.axhline(rate, color=c, lw=1, ls="--")
+    ax.set_xlabel("Recall")
+    ax.set_ylabel("Precision")
+    ax.set_title("Precision–Recall (nét đứt = tỷ lệ nhãn)")
+    ax.legend(frameon=False, loc="upper right")
+    _save(fig, out / "pr_train_test.png")
     return t
 
 

@@ -64,6 +64,8 @@ categorical_columns:
 stat_filter:
   max_missing: 0.95
   max_dominant: 0.995
+  min_scaled_var: 0.001
+  max_equal_share: 0.99
   max_spearman: 0.95
   corr_sample: 50000
 
@@ -78,6 +80,10 @@ selection:                    # chạy lại trong từng cửa sổ, chỉ trê
     learning_rate: 0.08
     depth: 6
     early_stopping_rounds: 40
+  steps:                      # danh mục phương pháp và tham số: xem configs/leadgen.yaml
+    - method: stat_filter
+    - method: group_importance
+    - method: cum_importance
 
 optuna:                       # tune 1 lần trên train của cửa sổ đầu tiên, dùng lại cho mọi cửa sổ
   n_trials: 25

@@ -23,7 +23,7 @@ minio:
 # Mỗi thư mục trên S3 là một group feature.
 feature_sources:
   - features/demographic/final
-  - features/demographic/l1m
+  # - features/demographic/l1m
   - features/gmv/final
   - features/location/l1m
   - features/sales/l1m
@@ -55,6 +55,8 @@ categorical_columns:
 stat_filter:
   max_missing: 0.95           # bỏ nếu thiếu > 95%
   max_dominant: 0.995         # bỏ nếu một giá trị chiếm > 99,5%
+  min_scaled_var: 0.001       # bỏ nếu phương sai (cắt p1–p99, đưa về [0, 1]) < 0,001
+  max_equal_share: 0.99       # hai cột giống hệt ở >= 99% số dòng: bỏ cột AUC đơn biến thấp hơn
   max_spearman: 0.95          # cặp |Spearman| > 0,95: giữ biến có AUC đơn biến cao hơn
   corr_sample: 50000
 
@@ -68,6 +70,39 @@ selection:
     learning_rate: 0.05
     depth: 6
     early_stopping_rounds: 50
+  # Các bước chọn biến, chạy lần lượt; mỗi bước nhận tập biến còn lại của bước trước.
+  # Mỗi bước: method + tham số riêng (ghi đè mặc định). Tham số chung cho mọi bước:
+  #   sample_rows: N            chạy bước đó trên mẫu ~N dòng (lấy trọn shop)
+  #   min_score / min_score_rel_mean / top_k / top_pct   luật chọn theo score (null = tắt luật mặc định)
+  # Phương pháp (src/features.py, METHODS):
+  #   stat_filter       missing, constant, low_variance, duplicate, Spearman (tham số = khoá của stat_filter)
+  #   group_importance  CatBoost CV từng group, cộng dồn importance (cum_importance, min_features, cv_folds, catboost)
+  #   cum_importance    CatBoost CV toàn bộ biến, cộng dồn importance (như trên)
+  #   permutation       AUC giảm khi xáo trộn biến, RandomForest (repeat, test_size, max_depth, n_estimators); mặc định > 0
+  #   single_auc        AUC CV của DecisionTree chỉ một biến (cv, max_depth, min_samples_leaf); mặc định >= 0,52
+  #   beat_random       importance RandomForest lớn hơn cột ngẫu nhiên (max_depth, n_estimators)
+  #   l1 / l2           |hệ số| LogisticRegression (C); mặc định >= 0,1 × trung bình; categorical cho qua
+  #   mutual_info       mutual information với nhãn; mặc định top 75%
+  #   target_corr       |Pearson| với nhãn; mặc định >= 0,1 và top 10 (nhãn hiếm: nên hạ min_score)
+  #   rfe               RFE DecisionTree (k: số biến hoặc tỷ lệ, step); mặc định k = 0,5
+  #   vote              chạy nhiều phương pháp, giữ biến được >= min_share số phương pháp chọn (methods, min_share)
+  steps:
+    - method: stat_filter
+    - method: group_importance
+    - method: cum_importance
+  # Ví dụ: bỏ phiếu giữa 3 phương pháp trước bước importance cuối
+  # steps:
+  #   - method: stat_filter
+  #   - method: vote
+  #     min_share: 0.67
+  #     methods:
+  #       - method: permutation
+  #         n_estimators: 300
+  #       - method: beat_random
+  #         n_estimators: 300
+  #       - method: mutual_info
+  #         sample_rows: 50000
+  #   - method: cum_importance
 
 optuna:
   n_trials: 40
